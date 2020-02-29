@@ -8,9 +8,11 @@ q1 = Queue()
 q2 = Queue()
 q3 = Queue()
 q4 = Queue()
-
-
 import requests
+#定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
+page_adr = 'https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date'
+#定义爬取的页数
+page_row = 11
 def xiazai(q):
     while not q.empty():
         url = q.get()
@@ -59,7 +61,7 @@ str2 = ''
 for n in range(1,11):#爬取页面的页数
     print('开始刷新页面：%d'%n)
     #爬取的url
-    r = requests.get('https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date/page=%d/' %n, headers={'Connection': 'close'}, verify=False)
+    r = requests.get(page_adr + '/page=%d/' %n, headers={'Connection': 'close'}, verify=False)
     str1 = str1 + r.text
     time.sleep(1)
 
