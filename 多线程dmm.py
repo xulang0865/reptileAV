@@ -21,7 +21,7 @@ def xiazai(q):
         while True:
             try:
                 num = num + 1
-                wget.download(url,out='20200225')
+                wget.download(url,out='download')
                 print('剩余队列：%s。下载成功：%s' % (str(q.qsize()), url))
                 break
             except Exception as e:
