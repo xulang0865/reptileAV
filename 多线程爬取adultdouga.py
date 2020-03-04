@@ -48,21 +48,15 @@ if __name__ == '__main__':
     q = Queue()
     q1 = Queue()
     ThreadList = []
-    for n in range(1, 7):
+    for n in range(1, 3):
         q.put('https://adultdouga.jp/?search=&page=%d&sort=date' % n)
-    list1 = []
-    for n in range(5):
-        n = ThreadNum(q,q1)
-        list1.append(n)
-    for n in list1:
-        n.start()
-    for n in list1:
-        n.join()
+    list1 = [ThreadNum(q,q1) for n in range(2)]
+    [n.start() for n in list1]
+    [n.join() for n in list1]
     endList = []
     print(q1.qsize())
     while not q1.empty():
         endList.append(q1.get())
-    import xlrd
     import xlwt
     from xlutils.copy import copy
     index = len(endList)
