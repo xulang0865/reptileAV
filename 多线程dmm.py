@@ -3,17 +3,20 @@ import wget
 from queue import Queue
 from threading import Thread
 import time
+import datetime
+
 q = Queue()
 q1 = Queue()
 q2 = Queue()
 q3 = Queue()
 q4 = Queue()
 import requests
+
 #定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
-page_adr = 'https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date'
+page_adr = 'https://www.dmm.co.jp/litevideo/-/list/=/article=keyword/id=4124'
 #定义爬取的页数
-page_row = 11
-def xiazai(q):
+page_row = 1
+def xiazai(q,dirNmae):
     while not q.empty():
         url = q.get()
         print('开始下载：%s'% url)
@@ -21,11 +24,12 @@ def xiazai(q):
         while True:
             try:
                 num = num + 1
-                wget.download(url,out='download')
+                wget.download(url,out=dirNmae)
                 print('剩余队列：%s。下载成功：%s' % (str(q.qsize()), url))
                 break
             except Exception as e:
                 print('出错%d次'%num)
+                print('报错：%s'%e)
                 time.sleep(5)
                 if num == 5:
                     continue
@@ -58,7 +62,7 @@ def shiping(q3,q4):
 requests.packages.urllib3.disable_warnings()
 str1 = ''
 str2 = ''
-for n in range(1,11):#爬取页面的页数
+for n in range(1,page_row + 1):#爬取页面的页数
     print('开始刷新页面：%d'%n)
     #爬取的url
     r = requests.get(page_adr + '/page=%d/' %n, headers={'Connection': 'close'}, verify=False)
@@ -117,11 +121,16 @@ for n in mp4_list:
     mp4 = n.replace('\\',"")
     mp4_url = 'https://cc3001.dmm.co.jp/litevideo/freepv%smp4'%mp4
     q.put(mp4_url)
-t1 = Thread(target=xiazai, args=(q,))
-t2 = Thread(target=xiazai, args=(q,))
-t3 = Thread(target=xiazai, args=(q,))
-t4 = Thread(target=xiazai, args=(q,))
-t5 = Thread(target=xiazai, args=(q,))
+time_stamp = datetime.datetime.now()
+dirName = time_stamp.strftime('%Y-%m-%d-%H%M%S')
+import os
+if not os.path.exists(dirName):
+    os.mkdir(dirName)
+t1 = Thread(target=xiazai, args=(q,dirName))
+t2 = Thread(target=xiazai, args=(q,dirName))
+t3 = Thread(target=xiazai, args=(q,dirName))
+t4 = Thread(target=xiazai, args=(q,dirName))
+t5 = Thread(target=xiazai, args=(q,dirName))
 t1.start()
 t2.start()
 t3.start()
