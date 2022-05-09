@@ -12,9 +12,11 @@ q3 = Queue()
 q4 = Queue()
 
 # 定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
-page_adr = 'https://www.dmm.co.jp/litevideo/-/list/=/article=maker/id=3152'
+page_adr = 'https://www.dmm.co.jp/search/=/searchstr=%E3%81%AA%E3%81%8C%E3%81%88/limit=120/n1=FgRCTw9VBA4GFlBVQ1oD/n2=Aw1fVhQKX0FZCEFUVmkKXhUAQF9UXAs_/sort=ranking/'
 # 定义爬取的页数
 page_row = 5
+# 线程数
+thread_row = 100
 
 def xiazai(q, dirNmae):
     while not q.empty():
@@ -28,8 +30,8 @@ def xiazai(q, dirNmae):
                 print('剩余队列：%s。下载成功：%s' % (str(q.qsize()), url))
                 break
             except Exception as e:
-                print('出错%d次' % num)
-                print('报错：%s' % e)
+                # print('出错%d次' % num)
+                # print('报错：%s' % e)
                 time.sleep(5)
                 if num == 5:
                     continue
@@ -41,7 +43,7 @@ def paqu(q1, q2):
         url = home_url + q1.get()
         while True:
             try:
-                r = requests.get(url, headers={'Connection': 'close'}, verify=False,cookies={'age_check_done':'1'})
+                r = requests.get(url, headers={'Connection': 'close','Accept-Language':'ja-JP'}, verify=False,cookies={'age_check_done':'1'})
                 break
             except:
                 print("遇到错误，暂停5秒继续")
@@ -55,10 +57,9 @@ def shiping(q3, q4):
         print('开始爬取视频！剩余%d个' % q3.qsize())
         while True:
             try:
-                r = requests.get(q3.get(), headers={'Connection': 'close'}, verify=False,cookies={'age_check_done':'1'})
+                r = requests.get(q3.get(), headers={'Connection': 'close','Accept-Language':'ja-JP'} ,verify=False,cookies={'age_check_done':'1'})
                 break
             except Exception as e:
-                print(e)
                 print("遇到错误，暂停5秒继续")
                 time.sleep(5)
                 continue
@@ -69,6 +70,8 @@ def shiping(q3, q4):
 requests.packages.urllib3.disable_warnings()
 str1 = ''
 str2 = ''
+import requests.packages.urllib3.util.ssl_
+requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL'
 
 # r = requests.get(page_adr + '/page=%d/' % 1, headers={'Connection': 'close'}, verify=False)
 # age_url = re.findall('https://www.dmm.co.jp/age_check/=/declared=yes/(.*?)" class="ageCheck__link ageCheck__link--r18">',r.text)
@@ -80,8 +83,7 @@ str2 = ''
 for n in range(1, page_row + 1):  # 爬取页面的页数
     print('开始刷新页面：%d' % n)
     # 爬取的url
-    r = requests.get(page_adr + '/page=%d/' % n, headers={'Connection': 'close'}, verify=False,cookies={'age_check_done':'1'})
-    print(r.text)
+    r = requests.get(page_adr + '/page=%d/' % n, headers={'Connection': 'close','Accept-Language':'ja-JP'}, verify=False,cookies={'age_check_done':'1'})
     str1 = str1 + r.text
     time.sleep(1)
 
@@ -91,21 +93,16 @@ print(list2)
 print('总共需要爬取%d个页面' % len(list2))
 for n in list2:
     q1.put(n)
-tt1 = Thread(target=paqu, args=(q1, q2))
-tt2 = Thread(target=paqu, args=(q1, q2))
-tt3 = Thread(target=paqu, args=(q1, q2))
-tt4 = Thread(target=paqu, args=(q1, q2))
-tt5 = Thread(target=paqu, args=(q1, q2))
-tt1.start()
-tt2.start()
-tt3.start()
-tt4.start()
-tt5.start()
-tt1.join()
-tt2.join()
-tt3.join()
-tt4.join()
-tt5.join()
+
+thread_list = []
+for thread in range(0,thread_row):
+    thread = Thread(target=paqu, args=(q1, q2))
+    thread_list.append(thread)
+    thread.start()
+
+for thread in thread_list:
+    thread.join()
+
 print(q2.qsize())
 while not q2.empty():
     str2 = str2 + q2.get()
@@ -117,21 +114,21 @@ mn = 0
 mp4_list = []
 for n in url_list:
     q3.put('https://' + n)
-ttt1 = Thread(target=shiping, args=(q3, q4))
-ttt2 = Thread(target=shiping, args=(q3, q4))
-ttt3 = Thread(target=shiping, args=(q3, q4))
-ttt4 = Thread(target=shiping, args=(q3, q4))
-ttt5 = Thread(target=shiping, args=(q3, q4))
-ttt1.start()
-ttt2.start()
-ttt3.start()
-ttt4.start()
-ttt5.start()
-ttt1.join()
-ttt2.join()
-ttt3.join()
-ttt4.join()
-ttt5.join()
+
+
+thread_list = []
+for thread in range(0,thread_row):
+    thread = Thread(target=shiping, args=(q3, q4))
+    thread_list.append(thread)
+    thread.start()
+
+for thread in thread_list:
+    thread.join()
+
+
+
+#
+
 while not q4.empty():
     mp4_list.append(q4.get())
 for n in mp4_list:
@@ -144,6 +141,7 @@ import os
 
 if not os.path.exists(dirName):
     os.mkdir(dirName)
+
 t1 = Thread(target=xiazai, args=(q, dirName))
 t2 = Thread(target=xiazai, args=(q, dirName))
 t3 = Thread(target=xiazai, args=(q, dirName))
