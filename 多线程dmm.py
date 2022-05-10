@@ -30,10 +30,12 @@ def xiazai(q, dirNmae):
                 print('剩余队列：%s。下载成功：%s' % (str(q.qsize()), url))
                 break
             except Exception as e:
-                # print('出错%d次' % num)
-                # print('报错：%s' % e)
+                print('出错%d次' % num)
+                print('报错：%s' % e)
                 time.sleep(5)
-                if num == 5:
+                if num < 5:
+                    pass
+                if num > 5:
                     continue
 
 def paqu(q1, q2):
