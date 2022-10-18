@@ -14,9 +14,9 @@ q3 = Queue()
 q4 = Queue()
 
 # 定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
-page_adr = 'https://www.dmm.co.jp/search/=/searchstr=%E3%81%AA%E3%81%8C%E3%81%88/limit=120/n1=FgRCTw9VBA4GFlBVQ1oD/n2=Aw1fVhQKX0FZCEFUVmkKXhUAQF9UXAs_/sort=ranking/'
+page_adr = 'https://www.dmm.co.jp/litevideo/-/list/=/article=maker/id=6393/'
 # 定义爬取的页数
-page_row = 5
+page_row = 3
 # 线程数
 thread_row = 100
 # 表名
@@ -141,7 +141,7 @@ for thread in thread_list:
 while not q4.empty():
     mp4_list.append(q4.get())
 import json
-red = redis.ConnectionPool(host='192.166.2.173', port=6379, db=1)
+red = redis.ConnectionPool(host='192.168.2.173', port=6379, db=1)
 r = redis.Redis(connection_pool=red)
 for n in mp4_list:
     mp4 = n.replace('\\', "")

@@ -4,12 +4,14 @@ import time
 from threading import Thread
 import os
 import requests
-table_name = '20220510'
+import datetime
+time_stamp = datetime.datetime.now()
+table_name = time_stamp.strftime('%Y%m%d')
 fail_table_name = f'{table_name}_fail'
 # 线程数
 thread_row = 5
 # 连接池
-red = redis.ConnectionPool(host='192.166.2.173', port=6379, db=1)
+red = redis.ConnectionPool(host='192.168.2.173', port=6379, db=1)
 r = redis.Redis(connection_pool=red)
 
 
