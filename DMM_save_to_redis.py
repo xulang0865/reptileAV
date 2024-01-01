@@ -6,7 +6,7 @@ import time
 import datetime
 import requests
 import redis
-
+requests.adapters.DEFAULT_RETRIES = 5
 q = Queue()
 q1 = Queue()
 q2 = Queue()
@@ -14,9 +14,9 @@ q3 = Queue()
 q4 = Queue()
 
 # 定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
-page_adr = 'https://www.dmm.co.jp/litevideo/-/list/=/article=maker/id=6393/'
+page_adr = 'https://www.dmm.co.jp/litevideo/-/list/search/=/searchstr=rbk'
 # 定义爬取的页数
-page_row = 3
+page_row = 1
 # 线程数
 thread_row = 100
 # 表名
@@ -48,12 +48,12 @@ def xiazai(q, dirNmae):
 def paqu(q1, q2):
     while not q1.empty():
         print('开始获取，剩余%d页面！' % q1.qsize())
-        home_url = 'https://www.dmm.co.jp/litevideo/-/detail/=/cid='
+        home_url = 'https://www.dmm.co.jp/service/digitalapi/-/html5_player/=/cid='
         url = home_url + q1.get()
         while True:
             try:
                 r = requests.get(url, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'}, verify=False,
-                                 cookies={'age_check_done': '1'})
+                                 cookies={'age_check_done': '1'},timeout=20)
                 break
             except:
                 print("遇到错误，暂停5秒继续")
@@ -62,19 +62,31 @@ def paqu(q1, q2):
         q2.put(r.text)
 
 
+
+
 def shiping(q3, q4):
     while not q3.empty():
         print('开始爬取视频！剩余%d个' % q3.qsize())
         while True:
             try:
-                r = requests.get(q3.get(), headers={'Connection': 'close', 'Accept-Language': 'ja-JP'}, verify=False,
+                ship_url = q3.get()
+                r = requests.get(ship_url, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'}, verify=False,
                                  cookies={'age_check_done': '1'})
                 break
             except Exception as e:
                 print("遇到错误，暂停5秒继续")
                 time.sleep(5)
                 break
-        q4.put(re.findall('freepv(.*?)mp4', r.text)[0])
+        str4 = r.text.replace('\\','')
+        iframe = re.findall('<iframe src="(.*?)"', str4)[0]
+        iframe_result = requests.get(iframe, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'},
+                                     verify=False,cookies={'age_check_done':'1'})
+        str5 = iframe_result.text
+        video_url =re.findall('cc3001.dmm.co.jp(.*?)mp4', str5)[0]
+        video_url = video_url.replace('\\','')
+        print(video_url)
+        video_url = f'https://cc3001.dmm.co.jp{video_url}mp4'
+        q4.put(video_url)
 
 
 # 开始处理cookies
@@ -98,13 +110,14 @@ for n in range(1, page_row + 1):  # 爬取页面的页数
     r = requests.get(page_adr + '/page=%d/' % n, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'},
                      verify=False, cookies={'age_check_done': '1'})
     str1 = str1 + r.text
-    time.sleep(1)
 
-list2 = re.findall('https://www.dmm.co.jp/litevideo/-/detail/=/cid=(.*?)">', str(str1))
+    time.sleep(1)
+print(str1)
+list2 = re.findall('/litevideo/-/detail/=/cid=(.*?)/', str(str1))
 print(list2)
 print('总共需要爬取%d个页面' % len(list2))
 for n in list2:
-    q1.put(n)
+    q1.put(f'{n}')
 
 thread_list = []
 for thread in range(0, thread_row):
@@ -118,8 +131,10 @@ for thread in thread_list:
 print(q2.qsize())
 while not q2.empty():
     str2 = str2 + q2.get()
-url_list = re.findall('<iframe type="text/html" src="//(.*?)"', str2)
-print(url_list)
+
+# print(str2)
+# url_list = re.findall('<iframe type="text/html" src="//(.*?)"', str2)
+url_list = re.findall(' <p class="view-count"><a href="https://(.*?)" ', str2)
 str3 = ""
 print('开始爬取视频地址，总共有%d个视频！' % len(url_list))
 mn = 0
@@ -145,5 +160,4 @@ red = redis.ConnectionPool(host='192.168.2.173', port=6379, db=1)
 r = redis.Redis(connection_pool=red)
 for n in mp4_list:
     mp4 = n.replace('\\', "")
-    mp4_url = 'https://cc3001.dmm.co.jp/litevideo/freepv%smp4' % mp4
-    r.lpush(redis_table_name, mp4_url)
+    r.lpush(redis_table_name, mp4)
