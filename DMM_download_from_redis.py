@@ -4,8 +4,21 @@ from threading import Thread
 import os
 import datetime
 
+def create_unique_folder(table_name):
+    folder_name = table_name
+    count = 1
+
+    while os.path.exists(folder_name):
+        folder_name = f"{table_name}_{count}"
+        count += 1
+
+    os.mkdir(folder_name)
+    return folder_name
+
 time_stamp = datetime.datetime.now()
 table_name = time_stamp.strftime('%Y%m%d')
+
+folder_name = create_unique_folder(table_name)
 fail_table_name = f'{table_name}_fail'
 # 线程数
 thread_row = 10
@@ -28,7 +41,7 @@ def xiazai():
                 requests.packages.urllib3.disable_warnings()
                 file = requests.get(url)
                 file_name = url.split('/')[-1]
-                file_path = os.path.join(table_name, file_name)
+                file_path = os.path.join(folder_name, file_name)
                 with open(file_path, "wb") as f:
                     f.write(file.content)
                 print('剩余队列：%s。下载成功：%s' % (str(r.llen(table_name)), url))
@@ -43,15 +56,15 @@ def xiazai():
                     break
 
 
+
 def download_from_redis():
     # 处理失败任务
     if r.llen(fail_table_name) != 0:
         for n in range(0, r.llen(fail_table_name)):
             value = r.lindex(fail_table_name, n)
             r.lpush(table_name, value)
-    # 创建文件夹
-    if not os.path.exists(table_name):
-        os.mkdir(table_name)
+
+
     # 开始下载任务
     thread_list = []
     for n in range(0, thread_row):
