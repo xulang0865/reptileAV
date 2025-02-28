@@ -14,9 +14,9 @@ q3 = Queue()
 q4 = Queue()
 
 # 定义爬取的页面，不带page,类似https://www.dmm.co.jp/litevideo/-/list/narrow/=/article=keyword/id=4111/n1=DgRJTglEBQ4GpoD6%%2CYyI%%2Cqs_/sort=date,如出现%记得使用%%
-page_adr = 'https://www.dmm.co.jp/litevideo/-/list/search/=/searchstr=rbk'
+page_adr = 'https://www.dmm.co.jp/litevideo/-/list/=/article=maker/id=4641//sort=date'
 # 定义爬取的页数
-page_row = 1
+page_row = 5
 # 线程数
 thread_row = 100
 # 表名
@@ -65,29 +65,14 @@ def paqu(q1, q2):
 
 
 def shiping(q3, q4):
+    import json
     while not q3.empty():
-        print('开始爬取视频！剩余%d个' % q3.qsize())
-        while True:
-            try:
-                ship_url = q3.get()
-                r = requests.get(ship_url, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'}, verify=False,
-                                 cookies={'age_check_done': '1'})
-                break
-            except Exception as e:
-                print("遇到错误，暂停5秒继续")
-                time.sleep(5)
-                break
-        str4 = r.text.replace('\\','')
-        iframe = re.findall('<iframe src="(.*?)"', str4)[0]
-        iframe_result = requests.get(iframe, headers={'Connection': 'close', 'Accept-Language': 'ja-JP'},
-                                     verify=False,cookies={'age_check_done':'1'})
-        str5 = iframe_result.text
-        video_url =re.findall('cc3001.dmm.co.jp(.*?)mp4', str5)[0]
-        video_url = video_url.replace('\\','')
-        print(video_url)
-        video_url = f'https://cc3001.dmm.co.jp{video_url}mp4'
-        q4.put(video_url)
-
+        # print('开始爬取视频！剩余%d个' % q3.qsize())
+        ship_url = q3.get()
+        ship_list_dict = json.loads(ship_url)
+        shiping_url = ship_list_dict[0].get('src')
+        print(shiping_url)
+        q4.put('https:' + shiping_url)
 
 # 开始处理cookies
 requests.packages.urllib3.disable_warnings()
@@ -112,9 +97,9 @@ for n in range(1, page_row + 1):  # 爬取页面的页数
     str1 = str1 + r.text
 
     time.sleep(1)
-print(str1)
+
 list2 = re.findall('/litevideo/-/detail/=/cid=(.*?)/', str(str1))
-print(list2)
+
 print('总共需要爬取%d个页面' % len(list2))
 for n in list2:
     q1.put(f'{n}')
@@ -132,15 +117,16 @@ print(q2.qsize())
 while not q2.empty():
     str2 = str2 + q2.get()
 
-# print(str2)
 # url_list = re.findall('<iframe type="text/html" src="//(.*?)"', str2)
-url_list = re.findall(' <p class="view-count"><a href="https://(.*?)" ', str2)
+
+str2 = str2.replace('\\','')
+url_list = re.findall('bitrates":(.*?),"affiliateId"', str2)
 str3 = ""
 print('开始爬取视频地址，总共有%d个视频！' % len(url_list))
 mn = 0
 mp4_list = []
 for n in url_list:
-    q3.put('https://' + n)
+    q3.put(n)
 
 thread_list = []
 for thread in range(0, thread_row):
@@ -151,8 +137,6 @@ for thread in range(0, thread_row):
 for thread in thread_list:
     thread.join()
 
-#
-
 while not q4.empty():
     mp4_list.append(q4.get())
 import json
@@ -161,3 +145,6 @@ r = redis.Redis(connection_pool=red)
 for n in mp4_list:
     mp4 = n.replace('\\', "")
     r.lpush(redis_table_name, mp4)
+
+
+

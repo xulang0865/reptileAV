@@ -26,11 +26,15 @@ thread_row = 10
 red = redis.ConnectionPool(host='192.168.2.173', port=6379, db=1)
 r = redis.Redis(connection_pool=red)
 
-
 def xiazai():
     while not r.llen(table_name) == 0:
         url = r.lpop(table_name).decode()
         print('开始下载：%s' % url)
+        file_name = url.split('/')[-1]
+        file_path = os.path.join(folder_name, file_name)
+        if os.path.exists(file_path):
+            print('文件 %s 已存在，跳过下载' % file_name)
+            continue
         num = 0
         while True:
             try:
@@ -40,8 +44,6 @@ def xiazai():
                 # wget.download(url, out=table_name)
                 requests.packages.urllib3.disable_warnings()
                 file = requests.get(url)
-                file_name = url.split('/')[-1]
-                file_path = os.path.join(folder_name, file_name)
                 with open(file_path, "wb") as f:
                     f.write(file.content)
                 print('剩余队列：%s。下载成功：%s' % (str(r.llen(table_name)), url))
@@ -54,7 +56,6 @@ def xiazai():
                     print(url)
                     r.lpush(fail_table_name, url.encode())
                     break
-
 
 
 def download_from_redis():
